@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Вход - DotaSkill{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">🔐 Вход в аккаунт</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        {{ form.email(class="form-control", placeholder="Введите ваш email") }}
+                        {% for error in form.email.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Пароль</label>
+                        {{ form.password(class="form-control", placeholder="Введите пароль") }}
+                        {% for error in form.password.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-danger w-100">Войти</button>
+                </form>
+                
+                <hr>
+                <p class="text-center">
+                    Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрируйтесь</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

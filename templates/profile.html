@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль - DotaSkill{% endblock %}
+
+{% block content %}
+<h2>👤 Настройки профиля</h2>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Редактирование профиля</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Имя пользователя</label>
+                        {{ form.username(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        {{ form.email(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Steam ID или ссылка на профиль</label>
+                        {{ form.steam_id(class="form-control", placeholder="Например: 76561198000000000 или ссылка на профиль") }}
+                        <small class="text-muted">Введите Steam ID64 или ссылку на ваш Steam профиль</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Аватар</label>
+                        {{ form.avatar(class="form-control") }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-danger">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Информация</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Как найти свой Steam ID:</strong></p>
+                <ol>
+                    <li>Откройте Steam клиент</li>
+                    <li>Нажмите на свой профиль</li>
+                    <li>Скопируйте URL из адресной строки</li>
+                    <li>Вставьте его в поле выше</li>
+                </ol>
+                <p>Примеры форматов:</p>
+                <ul>
+                    <li>https://steamcommunity.com/id/yourname</li>
+                    <li>https://steamcommunity.com/profiles/76561198000000000</li>
+                    <li>76561198000000000</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
