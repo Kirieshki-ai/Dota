@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Главная - DotaSkill{% endblock %}
+{% block content %}
+<div class="text-center mt-5">
+    <h1 class="display-4 mb-4">🎮 Проверь свой скилл в Dota 2</h1>
+    <p class="lead mb-4">Узнай свой реальный уровень игры, отслеживай прогресс и анализируй реплеи!</p>
+    {% if not current_user.is_authenticated %}
+    <div class="mt-4">
+        <a href="{{ url_for('register') }}" class="btn btn-danger btn-lg me-3">Начать сейчас</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">Войти</a>
+    </div>
+    {% else %}
+    <div class="mt-4">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-danger btn-lg">Мой дашборд</a>
+    </div>
+    {% endif %}
+    <div class="row mt-5">
+        <div class="col-md-4"><div class="card"><div class="card-body"><h5>📊 Статистика</h5><p>Детальная статистика матчей, ранга и MMR</p></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body"><h5>🎮 Реплеи</h5><p>Загружайте и анализируйте реплеи матчей</p></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body"><h5>📥 Экспорт</h5><p>Скачивайте статистику в CSV формате</p></div></div></div>
+    </div>
+</div>
+{% endblock %}

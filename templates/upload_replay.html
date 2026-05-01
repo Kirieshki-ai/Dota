@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Загрузка реплея - DotaSkill{% endblock %}
+
+{% block content %}
+<style>
+    .upload-zone {
+        border: 3px dashed #e94560;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: rgba(233, 69, 96, 0.05);
+    }
+
+    .upload-zone:hover {
+        background-color: rgba(233, 69, 96, 0.15);
+        border-color: #ff6b81;
+    }
+
+    .upload-zone.dragover {
+        background-color: rgba(233, 69, 96, 0.2);
+        border-color: #ff6b81;
+        transform: scale(1.02);
+    }
+
+    .file-selected {
+        border-color: #2ECC71 !important;
+        background-color: rgba(46, 204, 113, 0.1) !important;
+    }
+
+    .upload-icon {
+        font-size: 5em;
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover .upload-icon {
+        transform: translateY(-10px);
+    }
+
+    .replay-info-card {
+        background: linear-gradient(135deg, #0f3460, #16213e);
+        border: 1px solid #e94560;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 15px;
+    }
+
+    .format-example {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 5px;
+        padding: 10px;
+        font-family: monospace;
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>🎮 Загрузка реплея Dota 2</h2>
+            <a href="{{ url_for('my_replays') }}" class="btn btn-outline-light">
+                📁 Мои реплеи
+            </a>
+        </div>
+        <hr class="bg-light">
+    </div>
+</div>
+
+<div class="row">
+    <!-- Форма загрузки -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📤 Загрузить новый реплей</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('upload_replay') }}" method="POST" enctype="multipart/form-data"
+                      id="replayForm">
+                    <!-- Зона Drag & Drop -->
+                    <div class="upload-zone mb-3" id="dropZone">
+                        <div class="mb-3">
+                            <span class="upload-icon">🎮</span>
+                        </div>
+                        <h4>Перетащите файл реплея сюда</h4>
+                        <p class="text-muted">или нажмите для выбора файла</p>
+                        <p class="text-muted small">
+                            Поддерживаются файлы <strong>.dem</strong> (реплеи Dota 2)
+                        </p>
+
+                        <!-- Скрытый input для файла -->
+                        <input type="file"
+                               name="replay"
+                               id="replayFile"
+                               accept=".dem"
+                               style="display: none;"
+                               required>
+
+                        <!-- Информация о выбранном файле -->
+                        <div id="fileInfo" style="display: none;" class="mt-3">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="badge bg-success p-2 me-2" id="fileName">📁 Название файла</span>
+                                <span class="badge bg-info p-2" id="fileSize">📦 Размер</span>
+                            </div>
+                        </div>
+
+                        <!-- Ошибка -->
+                        <div id="fileError" style="display: none;" class="mt-3">
+                            <span class="badge bg-danger p-2" id="errorMessage"></span>
+                        </div>
+                    </div>
+
+                    <!-- Кнопка загрузки -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger btn-lg" id="uploadBtn" disabled>
+                            📤 Загрузить и проанализировать реплей
+                        </button>
+                    </div>
+
+                    <!-- Прогресс бар -->
+                    <div id="progressContainer" style="display: none;" class="mt-3">
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                                 id="progressBar"
+                                 style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <hr>
+
+                <!-- Информация о том, что будет проанализировано -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>🔍 Что анализируется:</h6>
+                        <ul class="small">
+                            <li>✅ ID матча</li>
+                            <li>✅ Список героев в матче</li>
+                            <li>✅ Количество игроков</li>
+                            <li>✅ Размер файла</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>⚠️ Ограничения:</h6>
+                        <ul class="small">
+                            <li>Максимальный размер: <strong>500 MB</strong></li>
+                            <li>Только файлы <strong>.dem</strong></li>
+                            <li>Не более 10 реплеев одновременно</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Информация о последней загрузке -->
+        <div class="replay-info-card">
+            <h6>📊 Статистика загрузок</h6>
+            <div class="row text-center">
+                <div class="col-4">
+                    <h4 class="text-danger" id="totalReplays">0</h4>
+                    <small>Всего реплеев</small>
+                </div>
+                <div class="col-4">
+                    <h4 class="text-warning" id="totalSize">0 MB</h4>
+                    <small>Общий размер</small>
+                </div>
+                <div class="col-4">
+                    <h4 class="text-success" id="analyzedCount">0</h4>
+                    <small>Проанализировано</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Боковая панель с информацией -->
+    <div class="col-md-4">
+        <!-- Как найти реплей -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">ℹ️ Как найти реплей</h5>
+            </div>
+            <div class="card-body">
+                <h6>Способ 1: Через игру</h6>
+                <ol class="small">
+                    <li>Откройте Dota 2</li>
+                    <li>Перейдите во вкладку <strong>"История"</strong></li>
+                    <li>Выберите нужный матч</li>
+                    <li>Нажмите <strong>"Скачать реплей"</strong></li>
+                </ol>
+
+                <h6>Способ 2: Через файлы</h6>
+                <p class="small">Реплеи автоматически сохраняются в папке:</p>
+                <div class="format-example small">
+                    Steam\steamapps\common\dota 2 beta\game\dota\replays\
+                </div>
+
+                <hr>
+
+                <h6>📝 Формат имени файла:</h6>
+                <div class="format-example small">
+                    match_id.dem<br>
+                    Пример: 1234567890.dem
+                </div>
+            </div>
+        </div>
+
+        <!-- Советы -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">💡 Советы</h5>
+            </div>
+            <div class="card-body">
+                <ul class="small">
+                    <li>Загружайте реплеи сразу после матча</li>
+                    <li>Реплеи хранятся 30 дней в игре</li>
+                    <li>Можно загрузить до 10 реплеев</li>
+                    <li>Анализ занимает несколько секунд</li>
+                    <li>Поддерживаются реплеи с турниров</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Быстрые ссылки -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">🔗 Быстрые ссылки</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('my_replays') }}" class="btn btn-outline-light btn-sm">
+                        📁 Мои реплеи
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-sm">
+                        📊 Дашборд
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-light btn-sm">
+                        👤 Профиль
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mb-3">
+    <label class="form-label">Тип анализа:</label>
+    <select name="analysis_type" class="form-select">
+        <option value="basic">🔍 Базовый (быстрый)</option>
+        <option value="detailed">📊 Детальный (рекомендуется)</option>
+        <option value="advanced">🚀 Продвинутый (нужна библиотека manta)</option>
+    </select>
+</div>
+<!-- Скрипты для Drag & Drop -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('replayFile');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileError = document.getElementById('fileError');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const errorMessage = document.getElementById('errorMessage');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+
+        const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+
+        // Клик по зоне загрузки
+        dropZone.addEventListener('click', function(e) {
+            if (e.target !== fileInput) {
+                fileInput.click();
+            }
+        });
+
+        // Перетаскивание файла
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // Выбор файла через input
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                handleFileSelect(fileInput.files[0]);
+            }
+        });
+
+        // Обработка выбранного файла
+        function handleFileSelect(file) {
+            // Скрываем предыдущие сообщения
+            fileInfo.style.display = 'none';
+            fileError.style.display = 'none';
+
+            // Проверяем расширение
+            if (!file.name.toLowerCase().endsWith('.dem')) {
+                showError('❌ Неверный формат файла! Поддерживаются только .dem файлы реплеев Dota 2.');
+                uploadBtn.disabled = true;
+                dropZone.classList.add('file-selected');
+                dropZone.style.borderColor = '#E74C3C';
+                return;
+            }
+
+            // Проверяем размер
+            if (file.size > MAX_FILE_SIZE) {
+                showError('❌ Файл слишком большой! Максимальный размер: 500 MB.');
+                uploadBtn.disabled = true;
+                dropZone.classList.add('file-selected');
+                dropZone.style.borderColor = '#E74C3C';
+                return;
+            }
+
+            // Если всё ок
+            fileName.textContent = '📁 ' + file.name;
+            fileSize.textContent = '📦 ' + formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            uploadBtn.disabled = false;
+            dropZone.classList.add('file-selected');
+            dropZone.style.borderColor = '#2ECC71';
+        }
+
+        // Показать ошибку
+        function showError(message) {
+            errorMessage.textContent = message;
+            fileError.style.display = 'block';
+        }
+
+        // Форматирование размера файла
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+            if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + ' MB';
+            return (bytes / 1073741824).toFixed(2) + ' GB';
+        }
+
+        // Отправка формы с прогрессом
+        document.getElementById('replayForm').addEventListener('submit', function(e) {
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '⏳ Загрузка...';
+            progressContainer.style.display = 'block';
+
+            // Симуляция прогресса (реальный прогресс не доступен без AJAX)
+            let progress = 0;
+            const interval = setInterval(function() {
+                progress += Math.random() * 10;
+                if (progress > 90) {
+                    clearInterval(interval);
+                    progress = 90;
+                }
+                progressBar.style.width = progress + '%';
+                progressBar.textContent = Math.round(progress) + '%';
+            }, 300);
+        });
+    });
+</script>
+{% endblock %}

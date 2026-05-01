@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - DotaSkill{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">📝 Регистрация</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Имя пользователя</label>
+                        {{ form.username(class="form-control", placeholder="Придумайте имя") }}
+                        {% for error in form.username.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        {{ form.email(class="form-control", placeholder="your@email.com") }}
+                        {% for error in form.email.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Steam ID (необязательно)</label>
+                        {{ form.steam_id(class="form-control", placeholder="Ссылка на профиль или Steam ID") }}
+                        <small class="text-muted">Можете добавить позже в профиле</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Пароль</label>
+                        {{ form.password(class="form-control", placeholder="Минимум 6 символов") }}
+                        {% for error in form.password.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Подтвердите пароль</label>
+                        {{ form.confirm_password(class="form-control", placeholder="Повторите пароль") }}
+                        {% for error in form.confirm_password.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-danger w-100">Зарегистрироваться</button>
+                </form>
+                
+                <hr>
+                <p class="text-center">
+                    Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

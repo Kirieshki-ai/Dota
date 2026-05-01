@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Мои реплеи - DotaSkill{% endblock %}
+
+{% block content %}
+<style>
+    .replay-card {
+        background: linear-gradient(135deg, #0f3460, #16213e);
+        border: 1px solid #e94560;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .replay-header {
+        background: linear-gradient(45deg, #e94560, #c73e54);
+        padding: 15px 20px;
+    }
+
+    .stat-box {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .stat-value {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    .stat-label {
+        font-size: 0.8em;
+        color: #a0a0a0;
+    }
+
+    .hero-tag {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 5px 15px;
+        margin: 3px;
+    }
+
+    .data-table {
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    .data-table td {
+        padding: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-table td:first-child {
+        color: #a0a0a0;
+        width: 150px;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>🎮 Мои реплеи</h2>
+            <a href="{{ url_for('upload_replay') }}" class="btn btn-danger btn-lg">
+                📤 Загрузить реплей
+            </a>
+        </div>
+        <hr class="bg-light">
+    </div>
+</div>
+
+{% if replays %}
+{% for r in replays %}
+<div class="replay-card mb-4">
+    <!-- Заголовок -->
+    <div class="replay-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">📁 {{ r.original_filename }}</h5>
+                <small>{{ r.uploaded_at.strftime('%d.%m.%Y в %H:%M') }}</small>
+            </div>
+            <span class="badge bg-success fs-6">✅ Проанализирован</span>
+        </div>
+    </div>
+
+    <!-- Содержимое -->
+    <div class="p-4">
+        <!-- Основные показатели -->
+        <div class="row mb-4">
+            {% if r.match_id %}
+            <div class="col-md-4">
+                <div class="stat-box">
+                    <div class="stat-label">🎯 Match ID</div>
+                    <div class="stat-value text-warning">{{ r.match_id }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="col-md-4">
+                <div class="stat-box">
+                    <div class="stat-label">📦 Размер</div>
+                    <div class="stat-value">{{ "%.1f"|format(r.file_size / 1048576) }} MB</div>
+                </div>
+            </div>
+
+            {% if r.players_count > 0 %}
+            <div class="col-md-4">
+                <div class="stat-box">
+                    <div class="stat-label">👥 Игроков</div>
+                    <div class="stat-value">{{ r.players_count }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Детальный анализ -->
+        {% set analysis = r.analysis_data %}
+
+        {% if analysis and analysis is mapping and analysis|length > 0 %}
+
+        <!-- Таблица с данными -->
+        <table class="data-table">
+            {% if analysis.get('game_mode') and analysis.game_mode != 'Неизвестно' %}
+            <tr>
+                <td>🎮 Режим игры</td>
+                <td><strong>{{ analysis.game_mode }}</strong></td>
+            </tr>
+            {% endif %}
+
+            {% if analysis.get('winner') and analysis.winner != 'Неизвестно' %}
+            <tr>
+                <td>🏆 Победитель</td>
+                <td>
+                            <span class="badge bg-{{ 'success' if 'Radiant' in analysis.winner else 'danger' }}">
+                                {{ analysis.winner }}
+                            </span>
+                </td>
+            </tr>
+            {% endif %}
+
+            {% if analysis.get('duration') and analysis.duration != 'Неизвестно' %}
+            <tr>
+                <td>⏱️ Длительность</td>
+                <td><strong>{{ analysis.duration }}</strong></td>
+            </tr>
+            {% endif %}
+
+            {% if analysis.get('total_kills', 0) > 0 %}
+            <tr>
+                <td>⚔️ Всего убийств</td>
+                <td><strong>{{ analysis.total_kills }}</strong></td>
+            </tr>
+            {% endif %}
+
+            {% if analysis.get('first_blood_time') %}
+            <tr>
+                <td>🩸 First Blood</td>
+                <td><strong>{{ analysis.first_blood_time }}</strong></td>
+            </tr>
+            {% endif %}
+        </table>
+
+        <!-- Список героев -->
+        {% if analysis.get('players') and analysis.players|length > 0 %}
+        <div class="mt-4">
+            <h6>🦸 Найденные герои ({{ analysis.players|length }}):</h6>
+            <div>
+                {% for player in analysis.players %}
+                <span class="hero-tag">
+                                🎮 <strong>{{ player.hero_name }}</strong>
+                            </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">
+            <p>📋 Базовая информация:</p>
+            <ul>
+                <li>Match ID: {{ r.match_id or 'Не найден' }}</li>
+                <li>Игроков: {{ r.players_count }}</li>
+                <li>Размер: {{ "%.1f"|format(r.file_size / 1048576) }} MB</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Сырые данные -->
+        <div class="mt-3">
+            <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#rawData{{ r.id }}">
+                🔍 Технические данные (JSON)
+            </button>
+            <div class="collapse mt-2" id="rawData{{ r.id }}">
+                <pre class="bg-dark text-light p-3 rounded"
+                     style="font-size: 0.8em; max-height: 300px; overflow-y: auto;">{{ analysis|tojson(indent=2) if analysis is mapping else analysis }}</pre>
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="mt-3 d-flex gap-2">
+            <a href="{{ url_for('download_replay', replay_id=r.id) }}" class="btn btn-success">
+                📥 Скачать
+            </a>
+            <a href="{{ url_for('delete_replay', replay_id=r.id) }}" class="btn btn-outline-danger"
+               onclick="return confirm('Удалить реплей?')">
+                🗑️ Удалить
+            </a>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="text-center py-5">
+    <h3>🎮 Нет загруженных реплеев</h3>
+    <p class="text-muted">Загрузите ваш первый реплей для анализа</p>
+    <a href="{{ url_for('upload_replay') }}" class="btn btn-danger btn-lg mt-3">
+        📤 Загрузить реплей
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}

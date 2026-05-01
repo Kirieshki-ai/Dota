@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль - DotaSkill{% endblock %}
+
+{% block content %}
+<style>
+    .avatar-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+    }
+
+    .avatar-image {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #e94560;
+        box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .avatar-image:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+    }
+
+    .avatar-placeholder {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #16213e, #0f3460);
+        border: 4px solid #e94560;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
+        color: #e94560;
+        margin: 0 auto;
+        box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+    }
+
+    .avatar-overlay {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: #e94560;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 3px solid #1a1a2e;
+        transition: all 0.3s ease;
+    }
+
+    .avatar-overlay:hover {
+        background: #ff6b81;
+        transform: scale(1.1);
+    }
+
+    .avatar-overlay label {
+        cursor: pointer;
+        margin: 0;
+        color: white;
+        font-size: 18px;
+    }
+
+    .user-info-card {
+        background: linear-gradient(135deg, #0f3460, #16213e);
+        border: 1px solid #e94560;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+    }
+
+    .user-name {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin-top: 15px;
+        color: #fff;
+    }
+
+    .user-email {
+        color: #a0a0a0;
+        font-size: 0.9em;
+    }
+
+    .user-steam {
+        color: #e94560;
+        font-size: 0.9em;
+        margin-top: 10px;
+    }
+</style>
+
+<h2>👤 Настройки профиля</h2>
+
+<div class="row mt-4">
+    <!-- Левая колонка - аватар и информация -->
+    <div class="col-md-4">
+        <div class="user-info-card">
+            <!-- Аватар -->
+            <div class="avatar-container">
+                {% if avatar_url %}
+                    <img src="{{ avatar_url }}" alt="Avatar" class="avatar-image" id="avatarPreview">
+                {% else %}
+                    <div class="avatar-placeholder" id="avatarPlaceholder">
+                        {{ current_user.username[0]|upper }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Имя пользователя -->
+            <div class="user-name">{{ current_user.username }}</div>
+
+            <!-- Email -->
+            <div class="user-email">📧 {{ current_user.email }}</div>
+
+            <!-- Steam ID -->
+            {% if current_user.steam_id %}
+            <div class="user-steam">
+                🎮 Steam ID: {{ current_user.steam_id }}
+            </div>
+            {% else %}
+            <div class="user-steam text-warning">
+                ⚠️ Steam ID не указан
+            </div>
+            {% endif %}
+
+            <!-- Дата регистрации -->
+            <div class="text-muted small mt-3">
+                🗓️ На сайте с {{ current_user.created_at.strftime('%d.%m.%Y') if current_user.created_at else 'недавно' }}
+            </div>
+        </div>
+
+        <!-- Быстрая статистика -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">📊 Быстрая статистика</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.player_stats %}
+                    {% set stats = current_user.player_stats %}
+                    <p>🎯 MMR: {{ stats.mmr_estimate }}</p>
+                    <p>📈 Винрейт: {{ "%.1f"|format(stats.winrate) if stats.winrate else '0' }}%</p>
+                    <p>🎮 Игр: {{ stats.total_games }}</p>
+                {% else %}
+                    <p class="text-muted">Обновите статистику в дашборде</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка - форма редактирования -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">✏️ Редактирование профиля</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="profileForm">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <strong>👤 Имя пользователя</strong>
+                        </label>
+                        {{ form.username(class="form-control", placeholder="Введите имя") }}
+                        {% for error in form.username.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <strong>📧 Email</strong>
+                        </label>
+                        {{ form.email(class="form-control", placeholder="your@email.com") }}
+                        {% for error in form.email.errors %}
+                            <small class="text-danger">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <strong>🎮 Steam ID или ссылка на профиль</strong>
+                        </label>
+                        {{ form.steam_id(class="form-control", placeholder="76561198000000000 или https://steamcommunity.com/id/вашник") }}
+                        <small class="text-muted">
+                            После сохранения статистика обновится автоматически
+                        </small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <strong>🖼️ Аватар профиля</strong>
+                        </label>
+
+                        {% if avatar_url %}
+                        <div class="mb-2">
+                            <img src="{{ avatar_url }}" alt="Текущий аватар"
+                                 style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #e94560;">
+                            <span class="text-muted ms-2">Текущий аватар</span>
+                        </div>
+                        {% endif %}
+
+                        {{ form.avatar(class="form-control", id="avatarInput", accept="image/*") }}
+                        <small class="text-muted">
+                            Поддерживаются JPG, PNG, GIF. Максимальный размер: 16 MB
+                        </small>
+                        <div id="avatarPreviewContainer" class="mt-2" style="display: none;">
+                            <p class="text-muted small">Предпросмотр:</p>
+                            <img id="avatarPreviewImg" src="" alt="Preview"
+                                 style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #2ECC71;">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            💾 Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Инструкция по Steam ID -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">ℹ️ Как найти Steam ID</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Способ 1: Через Steam</h6>
+                        <ol>
+                            <li>Откройте клиент Steam</li>
+                            <li>Нажмите на свой никнейм</li>
+                            <li>Скопируйте URL из адресной строки</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Способ 2: Через сайт</h6>
+                        <ol>
+                            <li>Зайдите на steamcommunity.com</li>
+                            <li>Откройте свой профиль</li>
+                            <li>Скопируйте ссылку</li>
+                        </ol>
+                    </div>
+                </div>
+                <hr>
+                <p><strong>Примеры форматов:</strong></p>
+                <ul>
+                    <li><code>https://steamcommunity.com/id/ваш_ник</code></li>
+                    <li><code>https://steamcommunity.com/profiles/76561198000000000</code></li>
+                    <li><code>76561198000000000</code></li>
+                </ul>
+                <div class="alert alert-info small mb-0">
+                    💡 <strong>Важно:</strong> Для получения статистики ваш профиль Dota 2 должен быть публичным.
+                    Включите "Expose Public Match Data" в настройках игры.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Предпросмотр аватара при выборе файла
+document.getElementById('avatarInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const previewContainer = document.getElementById('avatarPreviewContainer');
+    const previewImg = document.getElementById('avatarPreviewImg');
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewContainer.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    } else {
+        previewContainer.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Дашборд - DotaSkill{% endblock %}
+{% block content %}
+<style>
+    .rank-badge { display: inline-block; padding: 10px 20px; border-radius: 10px; font-size: 1.2em; font-weight: bold; margin: 10px 0; animation: glow 2s ease-in-out infinite alternate; }
+    @keyframes glow { from { box-shadow: 0 0 5px rgba(233,69,96,0.5); } to { box-shadow: 0 0 20px rgba(233,69,96,0.8); } }
+    .rank-immortal { background: linear-gradient(45deg, #FFD700, #FFA500); color: #000; }
+    .rank-divine { background: linear-gradient(45deg, #4A90E2, #9B59B6); color: #fff; }
+    .rank-ancient { background: linear-gradient(45deg, #E74C3C, #C0392B); color: #fff; }
+    .rank-legend { background: linear-gradient(45deg, #F39C12, #E67E22); color: #fff; }
+    .rank-archon { background: linear-gradient(45deg, #2ECC71, #27AE60); color: #fff; }
+    .rank-other { background: linear-gradient(45deg, #95A5A6, #7F8C8D); color: #fff; }
+    .mmr-positive { color: #2ECC71; font-weight: bold; }
+    .mmr-negative { color: #E74C3C; font-weight: bold; }
+    .match-row:hover { background-color: rgba(233,69,96,0.1) !important; }
+    .stat-card { transition: transform 0.3s ease; }
+    .stat-card:hover { transform: translateY(-5px); }
+    .table-dark { --bs-table-bg: #0f3460; }
+    .hero-item { background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid #e94560; }
+    .hero-item:hover { background: rgba(233,69,96,0.15); }
+    .dash-avatar {
+        width: 60px; height: 60px; border-radius: 50%; object-fit: cover;
+        border: 3px solid #e94560; margin-right: 15px;
+    }
+    .dash-avatar-placeholder {
+        width: 60px; height: 60px; border-radius: 50%;
+        background: linear-gradient(135deg, #e94560, #0f3460);
+        display: flex; align-items: center; justify-content: center;
+        margin-right: 15px; font-size: 24px; color: white; border: 3px solid #e94560;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>📊 Дашборд</h2>
+            <div>
+                {% if current_user.steam_id %}
+                <a href="{{ url_for('export_stats') }}" class="btn btn-outline-light me-2">📥 CSV</a>
+                <a href="{{ url_for('refresh_stats') }}" class="btn btn-danger">🔄 Обновить</a>
+                {% endif %}
+            </div>
+        </div>
+        <hr class="bg-light">
+    </div>
+</div>
+
+<!-- Профиль пользователя -->
+<div class="col-12 mb-4">
+    <div class="card stat-card">
+        <div class="card-body">
+            <div class="d-flex align-items-center">
+                {% if current_user.avatar %}
+                    <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" 
+                         alt="Avatar" class="dash-avatar">
+                {% else %}
+                    <div class="dash-avatar-placeholder">
+                        {{ current_user.username[0]|upper }}
+                    </div>
+                {% endif %}
+                <div>
+                    <h4 class="mb-1">{{ current_user.username }}</h4>
+                    <p class="text-muted mb-0">📧 {{ current_user.email }}</p>
+                    {% if current_user.steam_id %}
+                        <small class="text-success">🎮 Steam ID подключен</small>
+                    {% else %}
+                        <small class="text-warning">⚠️ Укажите Steam ID в <a href="{{ url_for('profile') }}">профиле</a></small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not current_user.steam_id %}
+<div class="alert alert-warning"><h4>⚠️ Steam ID не указан</h4><p>Укажите в <a href="{{ url_for('profile') }}">профиле</a></p></div>
+{% else %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        {% if extra_data and extra_data.rank_name and extra_data.rank_name != 'Некалиброванный' %}
+        <div class="card stat-card"><div class="card-header"><h5 class="mb-0">🏆 Ранг</h5></div>
+            <div class="card-body text-center py-4">
+                <div class="rank-badge {% if 'Immortal' in extra_data.rank_name %}rank-immortal{% elif 'Divine' in extra_data.rank_name %}rank-divine{% elif 'Ancient' in extra_data.rank_name %}rank-ancient{% elif 'Legend' in extra_data.rank_name %}rank-legend{% elif 'Archon' in extra_data.rank_name %}rank-archon{% else %}rank-other{% endif %}">{{ extra_data.rank_name }}</div>
+            </div></div>
+        {% endif %}
+        {% if extra_data and extra_data.mmr_change is defined %}
+        <div class="card stat-card mt-3"><div class="card-header"><h5 class="mb-0">📊 Изменение MMR</h5><small>за 20 матчей</small></div>
+            <div class="card-body text-center py-4">
+                {% if extra_data.mmr_change > 0 %}<h1 class="mmr-positive display-4">+{{ extra_data.mmr_change }}</h1><p class="text-success">📈 Отличный прогресс!</p>
+                {% elif extra_data.mmr_change < 0 %}<h1 class="mmr-negative display-4">{{ extra_data.mmr_change }}</h1><p class="text-danger">📉 Нужно поднажать!</p>
+                {% else %}<h1 class="display-4">0</h1><p class="text-muted">➡️ Без изменений</p>{% endif %}
+                <small class="text-muted">(±25 MMR за игру)</small>
+            </div></div>
+        {% endif %}
+        {% if extra_data %}
+        <div class="card stat-card mt-3"><div class="card-header"><h5 class="mb-0">📈 Последние 20 игр</h5></div>
+            <div class="card-body"><div class="row text-center">
+                <div class="col-6"><h4 class="text-success">{{ extra_data.get('recent_wins', 0) }}</h4><small>Побед</small></div>
+                <div class="col-6"><h4 class="text-danger">{{ extra_data.get('recent_losses', 0) }}</h4><small>Поражений</small></div>
+            </div></div></div>
+        {% endif %}
+        {% if favorite_heroes %}
+        <div class="card stat-card mt-3"><div class="card-header"><h5 class="mb-0">🦸 Любимые герои</h5></div>
+            <div class="card-body">
+                {% for hero in favorite_heroes %}
+                <div class="hero-item d-flex align-items-center mb-3 p-3">
+                    <div style="width:50px;height:50px;background:linear-gradient(135deg,#e94560,#0f3460);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:15px;">🎮</div>
+                    <div><strong>{{ hero.name }}</strong><br><small class="text-muted">Топ {{ loop.index }}</small></div>
+                </div>
+                {% endfor %}
+            </div></div>
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <div class="card stat-card"><div class="card-header d-flex justify-content-between"><h5 class="mb-0">🎮 Последние матчи</h5><span class="badge bg-info">{{ recent_matches|length }}</span></div>
+            <div class="card-body p-0">
+                {% if recent_matches %}
+                <div class="table-responsive"><table class="table table-dark table-hover mb-0">
+                    <thead><tr><th>Герой</th><th>K/D/A</th><th>KDA</th><th>Результат</th><th>MMR</th><th>Длит.</th></tr></thead>
+                    <tbody>
+                        {% for match in recent_matches %}
+                        <tr class="match-row">
+                            <td><strong>{{ match.hero_name }}</strong></td>
+                            <td><span class="text-success">{{ match.kills }}</span>/<span class="text-danger">{{ match.deaths }}</span>/<span class="text-warning">{{ match.assists }}</span></td>
+                            <td>{% if match.deaths > 0 %}{% set kda = (match.kills + match.assists) / match.deaths %}{% else %}{% set kda = (match.kills + match.assists) %}{% endif %}<span class="{% if kda >= 3 %}text-success{% elif kda >= 2 %}text-warning{% else %}text-danger{% endif %}">{{ "%.1f"|format(kda) }}</span></td>
+                            <td><span class="badge bg-{{ 'success' if match.win else 'danger' }}">{{ 'WIN' if match.win else 'LOSS' }}</span></td>
+                            <td class="{% if match.win %}mmr-positive{% else %}mmr-negative{% endif %}">{{ '+25' if match.win else '-25' }}</td>
+                            <td>{{ match.duration // 60 }} мин</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody></table></div>
+                {% else %}<div class="text-center py-5"><h4>Нет матчей</h4><a href="{{ url_for('refresh_stats') }}" class="btn btn-danger">Обновить</a></div>{% endif %}
+            </div></div>
+        {% if recent_matches %}
+        <div class="card stat-card mt-3"><div class="card-header"><h5 class="mb-0">📋 Сводка</h5></div>
+            <div class="card-body"><div class="row text-center">
+                <div class="col-3"><h4 class="text-success">{{ recent_matches|selectattr('win','equalto',True)|list|length }}</h4><small>Побед</small></div>
+                <div class="col-3"><h4 class="text-danger">{{ recent_matches|selectattr('win','equalto',False)|list|length }}</h4><small>Поражений</small></div>
+                <div class="col-3"><h4>{{ recent_matches|sum(attribute='kills') }}</h4><small>Убийств</small></div>
+                <div class="col-3"><h4>{{ recent_matches|sum(attribute='deaths') }}</h4><small>Смертей</small></div>
+            </div></div></div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
